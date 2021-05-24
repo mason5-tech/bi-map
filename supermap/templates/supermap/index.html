@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>地图</title>
+
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            /*font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;*/
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+            background: #fff;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            /*style=" margin: 0;overflow: hidden;background: #fff;width: 100%;height:100%;position: absolute;top: 0;"*/
+        }
+
+        /*#container {*/
+        /*    height: 100%;*/
+        /*    width: 100%;*/
+        /*    overflow: hidden;*/
+        /*    font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;*/
+        /*}*/
+
+        #map {
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            /*style="margin:0 auto;width: 100%;height: 100%"*/
+        }
+
+        table.polygon_popup {
+            width: 100%;
+        }
+
+        table.polygon_popup,
+        table.polygon_popup th,
+        table.polygon_popup td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        table.polygon_popup th,
+        table.polygon_popup td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        #pointTable tr:nth-child(even) {
+            background-color: #eee;
+        }
+
+        #pointTable tr:nth-child(odd) {
+            background-color: #fff;
+        }
+
+        #pointTable th {
+            background-color: yellow;
+            color: black;
+        }
+
+        #heatRadius {
+            width: 50px;
+            display: inline-block;
+        }
+
+        .just-padding {
+            padding: 15px;
+        }
+
+        .list-group.list-group-root {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .list-group.list-group-root .list-group {
+            margin-bottom: 0;
+        }
+
+        .list-group.list-group-root .list-group-item {
+            border-radius: 0;
+            border-width: 0;
+        }
+
+        .list-group.list-group-root > .list-group-item:first-child {
+            border-top-width: 0;
+        }
+
+        .list-group.list-group-root > .list-group > .list-group-item {
+            padding-left: 30px;
+        }
+
+        .list-group.list-group-root > .list-group > .list-group > .list-group-item {
+            padding-left: 45px;
+        }
+
+        .list-group.list-group-root > .list-group > .list-group > .list-group > .list-group-item {
+            padding-left: 60px;
+        }
+
+        .list-group-item .glyphicon {
+            margin-right: 5px;
+        }
+
+        input[type=number] {
+            height: 20px;
+            width: 45px;
+            margin-bottom: 1px;
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+
+        .inp {
+            visibility: hidden;
+        }
+
+        .test_wrapper {
+            background-color: red;
+            height: 20px;
+            width: 32px;
+            position: relative;
+            margin-left: 1px;
+            margin-right: 1px;
+        }
+
+        #b1_bkdaqu {
+            margin-left: 50px;
+            margin-top: 10px;
+        }
+
+        #b2_bkdaqu {
+            margin-left: 50px;
+            margin-top: 10px;
+        }
+
+        .b_spatial {
+            margin: 10px;
+            margin-left: 40px;
+        }
+
+        .form-check-label {
+            margin-left: 10px;
+            margin-right: 10px;
+        }
+
+        .form-check-input {
+            height: 12px;
+            width: 12px;
+        }
+
+        .panel-title a:after {
+            font-family: Fontawesome;
+            content: '\f077';
+            float: right;
+            font-size: 10px;
+            font-weight: 300;
+        }
+
+        .panel-title a.collapsed:after {
+            font-family: Fontawesome;
+            content: '\f078';
+        }
+    </style>
+
+    <!-- plugin css libraries-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{% static 'supermap/plugins/geoman/leaflet-geoman.css' %}">
+    <link rel="stylesheet" href="{% static 'supermap/plugins/side_bar/leaflet-sidebarrr.css' %}">
+    <link rel="stylesheet" href="{% static 'supermap/app/css/themee.css' %}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.24/datatables.min.css"/>
+    <link rel="stylesheet" type="text/css"
+          href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css"/>
+    <link rel="stylesheet" href="{% static 'supermap/leaflet/iclient-leaflet.min.css' %}">
+
+    <!-- Customise the styles used in this map -->
+    <link rel="shortcut icon" href="{% static 'supermap/images/bk.ico' %}" type="image/x-icon">
+
+    <!-- unused css -->
+    <!--    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"-->
+    <!--          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="-->
+    <!--          crossorigin=""/>-->
+
+</head>
+
+<body>
+
+<div id="sidebar" class="sidebar collapsed">
+    <!-- Nav tabs -->
+    <div class="sidebar-tabs">
+        <ul role="tablist">
+            <li><a href="#home" role="tab"><i class="fa fa-bars"></i></a></li>
+            <li><a href="#profile" role="tab"><i class="fa fa-user"></i></a></li>
+            <li><a href="#data" role="tab"><i class="fa fa-table"></i></a></li>
+            <li class="disabled"><a href="#messages" role="tab"><i class="fa fa-envelope"></i></a></li>
+            <li><a href="https://github.com/Turbo87/sidebar-v2" role="tab" target="_blank"><i
+                    class="fa fa-github"></i></a></li>
+        </ul>
+
+        <ul role="tablist">
+            <li><a href="#settings" role="tab"><i class="fa fa-gear"></i></a></li>
+        </ul>
+    </div>
+
+    <!-- Tab panes -->
+    <div class="sidebar-content">
+        <div class="sidebar-pane" id="home">
+            <h1 class="sidebar-header">
+                &nbsp 主题选择
+                <span class="sidebar-close"><i class="fa fa-caret-left"></i></span>
+            </h1>
+
+            <div class="theme-selection">
+                <div class="promo" style="--overlay-color: yellow" onclick="areaMap();">
+                    <div class="image-wrapper"><img alt="Not Avaliable"
+                                                    src="{% static 'supermap/images/map.jpg' %}"/>
+                    </div>
+                    <h2 class="title" data-cta="点击进入主题 →">区域划分</h2>
+                </div>
+                <div class="promo" style="--overlay-color: dodgerblue" onclick="shopMap(default_params,mendian_info_function);">
+                    <div class="image-wrapper"><img alt="Not Avaliable"
+                                                    src="{% static 'supermap/images/shop.jpg' %}"/>
+                    </div>
+                    <h2 class="title" data-cta="点击进入主题 →">门店+楼盘</h2>
+                </div>
+                <div class="promo" style="--overlay-color: darkgreen">
+                    <div class="image-wrapper"><img alt="Not Avaliable"
+                                                    src="{% static 'supermap/images/loupan.jpg' %}"/>
+                    </div>
+                    <h2 class="title" data-cta="点击进入主题 →">楼盘地图</h2>
+                </div>
+                <div class="promo" style="--overlay-color: hotpink">
+                    <div class="image-wrapper"><img
+                            src="{% static 'supermap/images/heatmap.jpg' %}"/>
+                    </div>
+                    <h2 class="title" data-cta="点击进入主题 →">热力地图</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-pane" id="profile">
+            <h1 class="sidebar-header">
+                &nbsp 用户登录
+                <span class="sidebar-close"><i class="fa fa-caret-left"></i></span>
+            </h1>
+        </div>
+
+        <div class="sidebar-pane" id="data">
+            <h1 class="sidebar-header">
+                &nbsp 数据分析
+                <span class="sidebar-close"><i class="fa fa-caret-left"></i></span>
+            </h1>
+
+            <div class="panel-group" id="accordion1" role="tablist" aria-multiselectable="true">
+                <div class="panel panel-default">
+                    <div class="panel-heading" role="tab" id="heading1">
+                        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#accordion1" href="#collapse1"
+                                                   aria-expanded="true" aria-controls="collapse1"> 区域分类 </a>
+                        </h4>
+                    </div>
+                    <div id="collapse1" class="panel-collapse collapse in" role="tabpanel"
+                         aria-labelledby="heading1">
+                        <div class="panel-body">
+                            <div class="list-group list-group-root">
+                                <a href="#item-1" class="list-group-item" data-toggle="collapse">
+                                    <i class="glyphicon glyphicon-chevron-right"></i> 门店专题
+                                </a>
+                                <div class="list-group collapse" id="item-1">
+
+                                    <a href="#item-1-1" class="list-group-item" data-toggle="collapse">
+                                        <i class="glyphicon glyphicon-chevron-right"></i> 大区
+                                    </a>
+                                    <div class="list-group collapse" id="item-1-1">
+                                        <!--                            <a href="#" class="list-group-item">-->
+                                        <!--                                <div class="form-check form-check-inline">-->
+                                        <!--                                    <input class="form-check-input" type="checkbox" id="inlineCheckbox1"-->
+                                        <!--                                           value="option1">-->
+                                        <!--                                    <label class="form-check-label" for="inlineCheckbox1">分类 1:</label>-->
+                                        <!--                                    <label class="test_wrapper">-->
+                                        <!--                                        <input class="inp" type="color">-->
+                                        <!--                                    </label>-->
+                                        <!--                                    <label class="form-check-label" for="inlineCheckbox1">数值区间:</label>-->
+                                        <!--                                    <input type="number" id="tentacles1" class="tentacles" name="tentacles" min="0" max="999">-->
+                                        <!--                                    <label class="form-check-label" for="inlineCheckbox1">-</label>-->
+                                        <!--                                    <input type="number" id="tentacles2" class="tentacles" name="tentacles" min="0" max="999">-->
+                                        <!--                                </div>-->
+                                        <!--                            </a>-->
+                                    </div>
+                                    <button id=b1_bkdaqu
+                                            onclick="add_fenlei(default_params.add_default.check,default_params.add_default.color,default_params.add_default.left,default_params.add_default.right)">
+                                        添加分类
+                                    </button>
+                                    <button id=b2_bkdaqu
+                                            onclick="var [ check,color,left,right ] = get_fenlei(); default_params.check = check; default_params.color = color; default_params.left = left; default_params.right = right; shopMap(default_params,mendian_info_function); ">
+                                        应用分类
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-group" id="accordion2" role="tablist" aria-multiselectable="true">
+                <div class="panel panel-default">
+                    <div class="panel-heading" role="tab" id="heading2">
+                        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#accordion2" href="#collapse2"
+                                                   aria-expanded="true" aria-controls="collapse2"> 空间分析 </a>
+                        </h4>
+                    </div>
+                    <div id="collapse2" class="panel-collapse collapse in" role="tabpanel"
+                         aria-labelledby="heading2">
+                        <div class="panel-body">
+                            <div class="list-group list-group-root">
+                                <a href="#item-2" class="list-group-item" data-toggle="collapse">
+                                    <i class="glyphicon glyphicon-chevron-right"></i> 门店分析
+                                </a>
+                                <div class="list-group collapse" id="item-2">
+                                    <a href="#" class="list-group-item">
+                                        <div class="form-check form-check-inline">
+                                            <label class="form-check-label">中心距离:</label>
+                                            <input type="number" class="tentacles" id="distance1" name="tentacles"
+                                                   min="0" max="999">
+                                            <label class="form-check-label">(km)</label>
+                                        </div>
+                                    </a>
+                                    <button class="b_spatial"
+                                            onclick="">
+                                        开始分析
+                                    </button>
+                                </div>
+                                <a href="#item-3" class="list-group-item" data-toggle="collapse">
+                                    <i class="glyphicon glyphicon-chevron-right"></i> 楼盘分析
+                                </a>
+                                <div class="list-group collapse" id="item-3">
+                                    <a href="#" class="list-group-item">
+                                        <div class="form-check form-check-inline">
+                                            <label class="form-check-label">中心距离:</label>
+                                            <input type="number" class="tentacles" id="distance2" name="tentacles"
+                                                   min="0" max="999">
+                                            <label class="form-check-label">(km)</label>
+                                        </div>
+                                    </a>
+                                    <button class="b_spatial"
+                                            onclick="shopMap(default_params,mendian_spatial_function);">
+                                        开始分析
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-data">
+                <div class="container">
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+                        下载数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-pane" id="messages">
+            <h1 class="sidebar-header">&nbsp &nbsp Messages<span class="sidebar-close"><i
+                    class="fa fa-caret-left"></i></span>
+            </h1>
+        </div>
+
+        <div class="sidebar-pane" id="settings">
+            <h1 class="sidebar-header">&nbsp &nbsp Settings<span class="sidebar-close"><i
+                    class="fa fa-caret-left"></i></span>
+            </h1>
+        </div>
+    </div>
+</div>
+
+<!-- <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+
+<a class="navbar-brand" href="">
+业策地图
+</a>
+
+<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+<span class="navbar-toggler-icon"></span>
+</button>
+
+<div class="collapse navbar-collapse" id="navbarSupportedContent">
+<ul class="navbar-nav mr-auto">
+<li class="nav-item active">
+<a class="nav-link" href="#" data-toggle="collapse" data-target=".navbar-collapse.in"
+    id="about-btn">
+    <i class="fa fa-question-circle white"></i>&nbsp;&nbsp;关于 </a>
+</li>
+<li class="nav-item dropdown">
+<a class="nav-link dropdown-toggle" href="#" id="toolsDrop" role="button" data-toggle="dropdown"
+    aria-haspopup="true" aria-expanded="false">
+    <i class="fa fa-wrench white"></i>&nbsp;&nbsp;地图工具栏</b>
+</a>
+<div class="dropdown-menu" aria-labelledby="toolsDrop">
+    <a href="#" class="dropdown-item" data-toggle="collapse" data-target=".navbar-collapse.in"
+        id="full-extent-btn">
+        <i class="fa fa-arrows-alt"></i>&nbsp;&nbsp;展示全图
+    </a>
+    <a href="#" id="identify-btn" class="dropdown-item mapTools" data-tool="identify">
+        <i class="fa fa-info-circle"></i>&nbsp;&nbsp;地图图层
+    </a>
+    <a href="#" id="queryWidget-btn" class="dropdown-item mapTools" data-tool="queryWidget">
+        <i class="fa fa-question-circle"></i>&nbsp;&nbsp;数据筛选
+    </a>
+    <a href="#" id="filterWidget-btn" class="dropdown-item mapTools" data-tool="filterWidget">
+        <i class="fa fa-filter"></i>&nbsp;&nbsp;数据专题
+    </a>
+    <a href="#" id="coordinates-btn" class="dropdown-item mapTools" data-tool="coordinates">
+        <i class="fa fa-dot-circle-o"></i>&nbsp;&nbsp;坐标获取
+    </a>
+    <a href="#" id="share-btn" class="dropdown-item mapTools" data-tool="share">
+        <i class="fa fa-share"></i>&nbsp;&nbsp;分享地图
+    </a>
+</div>
+</li>
+<li class="nav-item dropdown">
+<a class="nav-link dropdown-toggle" href="#" id="basemapDropdown" role="button"
+    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <i class="fa fa-globe white"></i>&nbsp;&nbsp;地图样式
+</a>
+<div class="dropdown-menu" aria-labelledby="navbarDropdown" id="ulBasemap">
+
+</div>
+</li>
+</ul>
+</div>
+</nav> -->
+
+<div id="map" class="sidebar-map"></div>
+
+<div id="exampleModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">数据表</h4>
+            </div>
+            <div class="modal-body">
+                <table id="example" class="display" width="100%"></table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">确认</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- <div id="container">
+<div id="sidebar" class="hidden-xs hidden-sm">
+<div class="sidebar-wrapper">
+<div class="card" id="pnlSidebar">
+<div class="card-header">
+    <h5 class="card-title"><span id="sidebarTitle">Sidebar</span>
+        <button type="button" class="btn btn-xs btn-default pull-right" id="sidebar-hide-btn">
+            <i class="fa fa-chevron-left"></i>
+        </button>
+    </h5>
+</div>
+<div class="card-body">
+    <div class="row">
+        <div id="sidebarContents" class="col-xs-12 col-md-12">
+        </div>
+    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="loading">
+<div class="loading-indicator">
+<div class="progress progress-striped active">
+<div class="progress-bar progress-bar-info progress-bar-full"></div>
+</div>
+</div>
+</div>
+
+<div id="authenticationError">
+<div class="row">
+<div class="col-md-4 offset-md-4">
+<div class="alert alert-danger" role="alert">
+<h4>There was a problem authenticating one or more layers with ArcGIS. Please reload the page and
+    try again.</h4>
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal fade" id="loginModal" tabindex="-1" role="dialog">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Login to ArcGIS</h5>
+</div>
+<div class="modal-body">
+<form class="form-signin">
+    <label for="username" class="sr-only">Email address</label>
+    <input type="text" id="username" class="form-control" placeholder="ArcGIS username" required=""
+        autofocus="">
+    <label for="password" class="sr-only">Password</label>
+    <input type="password" id="password" class="form-control" placeholder="Password" required="">
+
+    <button id="btnArcGISOnline" class="btn btn-lg btn-primary btn-block" type="submit">Sign
+        in</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal fade" id="aboutModal" tabindex="-1" role="dialog">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 id="aboutTitle" class="modal-title">关于此图</h5>
+<button class="close" type="button" data-dismiss="modal" aria-hidden="true">&times;</button>
+
+</div>
+<div id="aboutContents" class="modal-body">
+<p>关于此图</p>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal fade" id="shareModal" tabindex="-1" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Share URL</h5>
+<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+</div>
+<div class="modal-body">
+<div class="row">
+    <div class="col-md-12">
+        <span id="shareURL"></span>
+    </div>
+</div>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+</div>
+</div>
+</div>
+</div> -->
+
+<!--加载包web.js-->
+<script>
+    (function () {
+
+        function inputScript(url) {
+            var script = '<script type="text/javascript" src="' + url + '"><' + '/script>';
+            document.writeln(script);
+        }
+
+        function inputCSS(url) {
+            var css = '<link rel="stylesheet" href="' + url + '">';
+            document.writeln(css);
+        }
+
+        function inArray(arr, item) {
+            for (i in arr) {
+                if (arr[i] == item) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function load() {
+            var includes = ['randomcolor', 'papaparse', 'widgets', 'jquery', 'jquery-ui', 'bootstrap'];
+            var excludes = [];
+            inputScript("{% static 'supermap/leaflet/js/tokengenerator.js' %}");
+            var jQueryInclude = false;
+
+            if (inArray(includes, 'jquery') && !jQueryInclude) {
+                inputScript("https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js");
+            }
+
+            if (inArray(includes, 'bootstrap')) {
+                inputScript("https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js");
+                inputCSS("https://cdn.bootcss.com/twitter-bootstrap/3.3.7/css/bootstrap.min.css");
+                inputScript("https://cdn.bootcss.com/twitter-bootstrap/3.3.7/js/bootstrap.min.js");
+            }
+            if (inArray(includes, 'bootstrap-css')) {
+                inputCSS("https://cdn.bootcss.com/twitter-bootstrap/3.3.7/css/bootstrap.min.css")
+            }
+
+            if (inArray(includes, 'bootstrap-js')) {
+                inputScript("https://cdn.bootcss.com/twitter-bootstrap/3.3.7/js/bootstrap.min.js");
+            }
+
+            if (inArray(includes, 'jquery-ui')) {
+                inputCSS("https://cdn.bootcss.com/jqueryui/1.12.1/jquery-ui.css");
+                inputScript("https://cdn.bootcss.com/jqueryui/1.12.1/jquery-ui.min.js");
+            }
+
+            if (inArray(includes, 'template')) {
+                inputScript("https://iclient.supermap.io/web/libs/art-template/template-web.js");
+            }
+            if (inArray(includes, 'randomcolor')) {
+                inputScript("https://cdn.bootcss.com/randomcolor/0.5.2/randomColor.min.js");
+            }
+            if (inArray(includes, 'papaparse')) {
+                inputScript("https://cdn.bootcss.com/PapaParse/4.3.2/papaparse.min.js");
+            }
+            if (inArray(includes, 'moment')) {
+                inputScript("https://cdn.bootcss.com/moment.js/2.18.1/moment.min.js");
+                inputScript("https://cdn.bootcss.com/moment.js/2.18.1/locale/zh-cn.js");
+            }
+            if (inArray(includes, 'bootstrap-datetimepicker')) {
+                inputCSS("https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css");
+                inputScript("https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js");
+            }
+            if (inArray(includes, 'bootstrap-select')) {
+                inputCSS("https://cdn.bootcss.com/bootstrap-select/1.12.2/css/bootstrap-select.min.css");
+                inputScript("https://cdn.bootcss.com/bootstrap-select/1.12.2/js/bootstrap-select.min.js");
+            }
+            if (inArray(includes, 'geohash')) {
+                inputScript("https://iclient.supermap.io/web/libs/geohash/geohash.js");
+            }
+            if (inArray(includes, 'dat-gui')) {
+                inputScript("https://cdn.bootcss.com/dat-gui/0.7.6/dat.gui.js");
+                datGuiI18N();
+            }
+            if (inArray(includes, 'admin-lte')) {
+                inputCSS("https://iclient.supermap.io/web/libs/admin-lte/css/AdminLTE.min.css");
+                inputCSS("https://iclient.supermap.io/web/libs/admin-lte/css/skins/skin-blue.min.css");
+                inputCSS("https://iclient.supermap.io/web/libs/font-awesome/css/font-awesome.min.css");
+                inputScript("https://iclient.supermap.io/web/libs/admin-lte/js/app.min.js");
+            }
+            if (inArray(includes, 'jquery.scrollto')) {
+                inputScript("https://iclient.supermap.io/web/libs/jquery.scrollto/jquery.scrollTo.min.js");
+            }
+            if (inArray(includes, 'ace')) {
+                inputScript("https://cdn.bootcss.com/ace/1.2.6/ace.js");
+            }
+            if (inArray(includes, 'widgets.alert')) {
+                inputScript("{% static 'supermap/leaflet/js/widgets.js' %}");
+            }
+            if (inArray(includes, 'widgets')) {
+                inputCSS("https://cdn.bootcss.com/css-loader/2.2.0/css-loader.css");
+                inputScript("{% static 'supermap/leaflet/js/widgets.js' %}");
+            }
+            if (inArray(includes, 'zTree')) {
+                inputCSS("https://cdn.bootcss.com/zTree.v3/3.5.29/css/zTreeStyle/zTreeStyle.min.css");
+                inputScript("https://cdn.bootcss.com/zTree.v3/3.5.29/js/jquery.ztree.all.min.js");
+            }
+            if (inArray(includes, 'jquery-scontextMenu')) {
+                inputCSS("https://cdn.bootcss.com/jquery-contextmenu/2.6.3/jquery.contextMenu.min.css");
+                inputScript("https://cdn.bootcss.com/jquery-contextmenu/2.6.3/jquery.contextMenu.min.js");
+            }
+            if (inArray(includes, 'colorpicker')) {
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/jquery.js");
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/jquery.colorpicker.js");
+            }
+            if (inArray(includes, 'fileupLoad')) {
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/jquery.js");
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/fileupLoad.js");
+            }
+            if (inArray(includes, 'sticklr')) {
+                inputCSS("https://iclient.supermap.io/web/libs/iclient8c/examples/css/jquery-sticklr.css");
+                inputCSS("https://iclient.supermap.io/web/libs/iclient8c/examples/css/icon.css");
+            }
+            if (inArray(includes, 'responsive')) {
+                inputCSS("https://iclient.supermap.io/web/libs/iclient8c/examples/css/bootstrap-responsive.min.css");
+            }
+            if (inArray(includes, 'lazyload')) {
+                inputScript("https://cdn.bootcss.com/jquery_lazyload/1.9.7/jquery.lazyload.min.js");
+            }
+            if (inArray(includes, 'i18n')) {
+                inputScript("https://cdn.bootcss.com/i18next/10.0.7/i18next.min.js");
+                inputScript("https://cdn.bootcss.com/jquery-i18next/1.2.1/jquery-i18next.min.js");
+            }
+            if (inArray(includes, 'react')) {
+                inputScript("https://iclient.supermap.io/web/libs/react/16.4.2/react.production.min.js");
+                inputScript("https://iclient.supermap.io/web/libs/react/16.4.2/react-dom.production.min.js");
+                inputScript("https://cdn.bootcss.com/babel-standalone/6.26.0/babel.min.js");
+            }
+            if (inArray(includes, 'vue')) {
+                inputScript("https://iclient.supermap.io/web/libs/vue/2.5.17/vue.min.js");
+            }
+            if (inArray(includes, 'ionRangeSlider')) {
+                inputCSS("https://cdn.bootcss.com/ion-rangeslider/2.2.0/css/ion.rangeSlider.css");
+                inputCSS("https://cdn.bootcss.com/normalize/8.0.0/normalize.css");
+                inputCSS("https://cdn.bootcss.com/ion-rangeslider/2.2.0/css/ion.rangeSlider.skinHTML5.css");
+                inputScript("https://cdn.bootcss.com/ion-rangeslider/2.2.0/js/ion.rangeSlider.min.js");
+            }
+            if (inArray(includes, 'plottingPanel')) {
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/plottingPanel/zTree/jquery.ztree.core.js");
+                inputCSS("https://iclient.supermap.io/web/libs/iclient8c/examples/js/plottingPanel/zTree/css/zTreeStyle.css");
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/plottingPanel/jquery-easyui-1.4.4/jquery.easyui.min.js");
+                inputCSS("https://iclient.supermap.io/web/libs/iclient8c/examples/js/plottingPanel/jquery-easyui-1.4.4/css/easyui.css");
+                inputScript("https://iclient.supermap.io/web/libs/iclient8c/examples/js/plottingPanel/colorpicker/js/colorpicker.js");
+                inputCSS("https://iclient.supermap.io/web/libs/iclient8c/examples/js/plottingPanel/colorpicker/css/colorpicker.css");
+            }
+        }
+
+        load();
+        window.isLocal = false;
+        window.server = document.location.toString().match(/file:\/\//) ? "http://localhost:8090" : document.location.protocol + "//" + document.location.host;
+        window.version = "10.1.1";
+        window.preRelease = "";
+    })();
+
+
+</script>
+
+<!--加载包include.js-->
+<script>
+    (function () {
+        function inputScript(url) {
+            var script = '<script type="text/javascript" src="' + url + '"><' + '/script>';
+            document.writeln(script);
+        }
+
+        function inputCSS(url) {
+            var css = '<link rel="stylesheet" href="' + url + '">';
+            document.writeln(css);
+        }
+
+        function inArray(arr, item) {
+            for (i in arr) {
+                if (arr[i] == item) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function supportES6() {
+            var code = "'use strict'; class Foo {}; class Bar extends Foo {};";
+            try {
+                new Function(code)();
+            } catch (err) {
+                return false;
+            }
+            if (!Array.from) {
+                return false;
+            }
+            return true;
+        }
+
+        //加载类库资源文件
+        function load() {
+            var includes = ['iclient-leaflet-css', 'echarts', 'leaflet.heat', 'leaflet.draw', 'leaflet.markercluster', 'turf']
+            var excludes = []
+            // 在线
+            if (!inArray(excludes, 'leaflet')) {
+                inputCSS('https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css');
+                inputScript('https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js');
+            }
+            if (inArray(includes, 'leaflet.heat')) {
+                inputScript('https://cdn.bootcss.com/leaflet.heat/0.2.0/leaflet-heat.js');
+            }
+            if (inArray(includes, 'leaflet.markercluster')) {
+                inputCSS('https://cdn.bootcss.com/leaflet.markercluster/1.4.1/MarkerCluster.Default.css');
+                inputCSS('https://cdn.bootcss.com/leaflet.markercluster/1.4.1/MarkerCluster.css');
+                inputScript('https://cdn.bootcss.com/leaflet.markercluster/1.4.1/leaflet.markercluster.js');
+            }
+            if (inArray(includes, 'leaflet.draw')) {
+                inputCSS('https://cdn.bootcss.com/leaflet.draw/1.0.4/leaflet.draw.css');
+                inputScript('https://cdn.bootcss.com/leaflet.draw/1.0.4/leaflet.draw.js');
+            }
+            if (inArray(includes, 'leaflet-geoman')) {
+                inputCSS('https://cdn.jsdelivr.net/npm/@geoman-io/leaflet-geoman-free@2.7.0/dist/leaflet-geoman.css');
+                inputScript('https://cdn.jsdelivr.net/npm/@geoman-io/leaflet-geoman-free@2.7.0/dist/leaflet-geoman.min.js');
+            }
+            if (inArray(includes, 'leaflet.miniMap')) {
+                inputCSS('https://cdn.bootcss.com/leaflet-minimap/3.6.1/Control.MiniMap.min.css');
+                inputScript('https://cdn.bootcss.com/leaflet-minimap/3.6.1/Control.MiniMap.min.js');
+            }
+            if (inArray(includes, 'mapv')) {
+                inputScript('https://cdn.jsdelivr.net/npm/mapv@2.0.56/build/mapv.min.js');
+            }
+            if (inArray(includes, 'turf')) {
+                inputScript('https://cdn.bootcss.com/Turf.js/5.1.6/turf.min.js');
+            }
+            if (inArray(includes, 'echarts')) {
+                inputScript('https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min.js');
+            }
+            if (inArray(includes, 'elasticsearch')) {
+                inputScript('https://cdn.bootcss.com/elasticsearch/16.7.1/elasticsearch.js');
+            }
+            if (inArray(includes, 'xlsx')) {
+                inputScript('https://cdn.jsdelivr.net/npm/xlsx@0.16.7/dist/xlsx.core.min.js');
+            }
+            // 本地
+            if (inArray(includes, 'leaflet.sidebyside')) {
+                inputScript(
+                    'https://iclient.supermap.io/web/libs/leaflet/plugins/leaflet-side-by-side/leaflet-side-by-side.min.js'
+                );
+            }
+            if (inArray(includes, 'd3')) {
+                inputScript('https://cdn.bootcss.com/d3/6.1.1/d3.min.js');
+            }
+            if (inArray(includes, 'd3-hexbin')) {
+                inputScript('https://d3js.org/d3-hexbin.v0.2.min.js');
+            }
+            if (inArray(includes, 'd3Layer')) {
+                inputScript('https://iclient.supermap.io/web/libs/leaflet/plugins/leaflet.d3Layer/leaflet-d3Layer.js');
+            }
+            if (inArray(includes, 'osmbuildings')) {
+                inputScript('https://iclient.supermap.io/web/libs/osmbuildings/OSMBuildings-Leaflet.js');
+            }
+            if (inArray(includes, 'leaflet-icon-pulse')) {
+                inputCSS('https://iclient.supermap.io/web/libs/leaflet/plugins/leaflet-icon-pulse/L.Icon.Pulse.css');
+                inputScript('https://iclient.supermap.io/web/libs/leaflet/plugins/leaflet-icon-pulse/L.Icon.Pulse.js');
+            }
+            if (inArray(includes, 'deck')) {
+                inputScript('https://iclient.supermap.io/web/libs/deck.gl/5.1.3/deck.gl.min.js');
+            }
+            if (inArray(includes, 'pixi')) {
+                inputScript('https://cdn.bootcss.com/pixi.js/4.8.7/pixi.js');
+                inputScript('https://cdn.jsdelivr.net/npm/leaflet-pixi-overlay@1.8.1/L.PixiOverlay.min.js');
+                inputScript(
+                    'https://iclient.supermap.io/web/libs/leaflet/plugins/Leaflet.PixiOverlay/1.8.1/MarkerContainer.js'
+                );
+                inputScript('https://iclient.supermap.io/web/libs/bezier-easing/2.1.0/bezier-easing.js');
+            }
+
+            // iclient
+            if (!inArray(excludes, 'iclient-leaflet')) {
+                if (supportES6()) {
+                    inputScript("{% static 'supermap/leaflet/iclient-leaflet-es6.js' %}");
+                } else {
+                    inputScript("{% static 'supermap/leaflet/iclient-leaflet.min.js' %}");
+                }
+            }
+            if (inArray(includes, 'iclient-leaflet-css')) {
+                inputCSS("{% static 'supermap/leaflet/iclient-leaflet.min.css' %}");
+            }
+            if (inArray(includes, 'iclient-plot-leaflet')) {
+                inputCSS('https://iclient.supermap.io/web/libs/plotting/leaflet/10.1.1/iclient-plot-leaflet.css');
+                if (supportES6()) {
+                    inputScript(
+                        'https://iclient.supermap.io/web/libs/plotting/leaflet/10.1.1/iclient-plot-leaflet-es6.min.js'
+                    );
+                } else {
+                    inputScript('https://iclient.supermap.io/web/libs/plotting/leaflet/10.1.1/iclient-plot-leaflet.min.js');
+                }
+            }
+            if (inArray(includes, 'ant-design-vue')) {
+                inputCSS('https://cdn.jsdelivr.net/npm/ant-design-vue@1.3.9/dist/antd.min.css');
+                inputScript('https://cdn.jsdelivr.net/npm/ant-design-vue@1.3.9/dist/antd.min.js');
+            }
+            if (inArray(includes, 'echarts-vue')) {
+                inputScript('https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min.js');
+                inputScript('https://cdn.jsdelivr.net/npm/vue-echarts@4.1.0/dist/vue-echarts.min.js');
+                inputScript('https://cdn.jsdelivr.net/npm/echarts-liquidfill@2.0.6/dist/echarts-liquidfill.min.js');
+                inputScript('https://iclient.supermap.io/web/libs/echartsLayer/EchartsLayer.min.js');
+            }
+            if (inArray(includes, 'iclient-leaflet-vue')) {
+                inputCSS("{% static 'supermap/leaflet/iclient-leaflet-vue.css' %}");
+                inputScript("{% static 'supermap/leaflet/iclient-leaflet-vue.min.js' %}");
+            }
+            if (inArray(includes, 'leaflet-mapbox-gl')) {
+                inputScript('https://cdn.jsdelivr.net/npm/mapbox-gl-leaflet@0.0.14/leaflet-mapbox-gl.js');
+            }
+
+        }
+
+        load();
+        window.isLocal = false;
+        window.server = document.location.toString().match(/file:\/\//)
+            ? 'http://localhost:8090'
+            : document.location.protocol + '//' + document.location.host;
+    })();
+
+</script>
+
+<!-- required js -->
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script type="text/javascript" src="{% static 'supermap/plugins/geoman/leaflet-geoman.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'supermap/plugins/PointInPolygon/wise-leaflet-pip.js' %}"></script>
+<script type="text/javascript" src="{% static 'supermap/plugins/side_bar/leaflet-sidebar.min.js' %}"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.24/datatables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
+
+<!-- unused js-->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script> -->
+
+</body>
+
+</html>
+
+<!--LOAD CSRF-TOKEN-->
+<script>
+    $(document).ajaxSend(function (event, xhr, settings) {
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function sameOrigin(url) {
+            // url could be relative or scheme relative or absolute
+            var host = document.location.host; // host + port
+            var protocol = document.location.protocol;
+            var sr_origin = '//' + host;
+            var origin = protocol + sr_origin;
+            // Allow absolute or scheme relative URLs to same origin
+            return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+                (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+                // or any other URL that isn't scheme relative or absolute i.e relative.
+                !(/^(\/\/|http:|https:).*/.test(url));
+        }
+
+        function safeMethod(method) {
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    });
+
+</script>
+
+<!--Configure-->
+<script>
+    var update_pointinpolygon = {
+        'shop': false,
+        'loupan': false,
+    };
+</script>
+
+<!--MAP INITIAL-->
+<script>
+    // INITIAL MAP
+    var
+        normalMap = L.supermap.tiandituTileLayer({
+            key: null,
+            layerType: 'vec',
+            attribution: false
+        }),
+
+        labelMap = L.supermap.tiandituTileLayer({
+            isLabel: true,
+            key: null,
+            attribution: false
+        }),
+
+        terMap = L.supermap.tiandituTileLayer({
+            key: null,
+            layerType: 'ter',
+            attribution: false
+        }),
+
+        imgMap = L.supermap.tiandituTileLayer({
+            key: null,
+            layerType: 'img',
+            attribution: false
+        }),
+
+        map = L.map('map', {
+            preferCanvas: true,
+            center: {lat: 22.559805, lon: 114.063644},
+            maxZoom: 18,
+            zoom: 10,
+            zoomControl: true,
+            layers: [normalMap, labelMap],
+            crs: L.CRS.TianDiTu_WGS84,
+            logoControl: false,
+            attributionControl: false,
+        }),
+
+        baseMaps = {
+            "标准图": normalMap,
+            '地形图': terMap,
+            '影像图': imgMap,
+        },
+
+        overlayMaps = {
+            'Labels': labelMap,
+        };
+
+    //INITIAL CONTROLS
+    var poiSearch,
+        layerContoller,
+        layerGroup = L.layerGroup();
+
+    //SCALE CONTROL
+    L.control.scale().addTo(map);
+
+    //COPYRIGHT CONTROL
+    var prefix = "<a href='https://sz.xx.com/' title='Powerful BI for Business Strategy'>Map</a>",
+        attribution = "Map SZ <span>© <a href='https://sz.ke.com/' target='_blank'>策略中心</a></span> with <span>© <a href='https://sz.ke.com/' target='_blank'>数据部</a></span>";
+    L.control.attribution({
+        position: 'bottomright',
+        prefix: prefix
+    }).addAttribution(attribution).addTo(map);
+
+    //SIDE-BAR CONTROL
+    var sidebar = L.control.sidebar('sidebar').addTo(map);
+
+    //GRAPH TOOL CONTROL
+    var graph_tool = function () {
+        var options = {
+            position: 'topleft',
+            drawMarker: true,
+            drawPolygon: true,
+            drawPolyline: true,
+            editPolygon: true,
+            deleteLayer: true,
+        };
+        map.pm.addControls(options);
+
+        // CREATE GRAPH EVENT
+        map.on('pm:create', e => {
+            var overlays = {},
+                BC_name = prompt("输入商圈名字"),
+                layer = e.layer;
+            if (layer instanceof L.Polygon) {
+                overlays[BC_name] = e.layer._latlngs[0];
+                console.log(overlays);
+                //异步传输
+                // $.ajax({
+                //     type: 'POST',
+                //     url: "{% url 'post_coordinate' %}",
+                //     data: {
+                //         'overlays': JSON.stringify(overlays),
+                //     },
+                //     dataType: "json",
+                //     cache: false,
+                // });
+                layer.bindTooltip(function (layer) {
+                        return BC_name;
+                    }, {permanent: true, opacity: 0.5}
+                ).openTooltip();
+            }
+        });
+    }();
+</script>
+
+<!--CUSTOM FUNCTIONS-->
+<script>
+    //SEARCH CONTROL FUNCTION
+    function createSearch() {
+        return L.supermap.components.search({
+            isGeoCoding: true,
+            perPageDataNum: 8,
+            style: function (feature, latLng) {
+                if (latLng && feature instanceof L.latLng || feature.geometry.type.toLowerCase() === "point") {
+                    return L.circleMarker(latLng, {
+                        fillColor: 'red',
+                        weight: 1,
+                        opacity: 1,
+                        color: 'red',
+                        fillOpacity: 0.6
+                    });
+                }
+            }
+        }).addTo(map);
+    }
+
+    //HEAT MAP FUNCTION
+    function loadHeatMap(data) {
+        var heatPoints = data.features.map(point => [point.geometry.coordinates[1], point.geometry.coordinates[0], 1]);
+        var heatRadius = 30;
+        var radius = parseInt(heatRadius);
+        radius = (radius > 0) ? radius : 0;
+        resultLayer = L.heatLayer(heatPoints, {
+            radius: radius,
+            minOpacity: 0.5
+        });
+        return resultLayer;
+    }
+
+    //POINTS IN POLYGONS FUNCTION
+    function updatePoint_daqu(data, polygon) {
+        var updated_data = data.features.map(function (point) {
+            Object.keys(polygon._layers).map(function (key) {
+                if (polygon._layers[key].contains({
+                    lat: point.geometry.coordinates[1],
+                    lng: point.geometry.coordinates[0]
+                })) {
+                    point.properties['大区'] = polygon._layers[key].feature.properties['大区'];
+                }
+            });
+            return point
+        });
+        var post_data = JSON.stringify(updated_data);
+        var type = JSON.stringify({'type': 'draw_bk_daqu'});
+        widgets.loader.showLoader();
+        //异步传输
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'shopInfo_daqu' %}",
+            data: {
+                'post_data': post_data,
+                'type': type
+            },
+            dataType: "json",
+            cache: false,
+            success: function (response) {
+                if (response["valid"]) {
+                    alert("数据库大区更新成功；");
+                } else {
+                    alert("更新未成功；")
+                }
+                widgets.loader.removeLoader();
+            },
+            error: function (response) {
+                alert(response["responseJSON"]["error"]);
+            }
+        });
+    }
+
+    //Tooltip Zoom Font-Size
+    function zoom_fontsize(daqu_group) {
+        var zoomLevel = map.getZoom();
+
+        if (zoomLevel < 12) {
+            Object.keys(daqu_group).forEach(function (key) {
+                if (map.hasLayer(daqu_group[key])) {
+                    daqu_group[key].eachLayer(function (layer) {
+                        if (layer.getTooltip()) {
+                            layer.unbindTooltip();
+                        }
+                    });
+                }
+            })
+        } else if (zoomLevel >= 12) {
+            Object.keys(daqu_group).forEach(function (key) {
+                if (map.hasLayer(daqu_group[key])) {
+
+                    daqu_group[key].eachLayer(function (layer) {
+                        if (!layer.getTooltip()) {
+                            layer.bindTooltip(function (layer) {
+                                    return layer.feature.properties[key]; //merely sets the tooltip text
+                                }, {permanent: true, opacity: 0.5}  //then add your options
+                            ).openTooltip();
+                        }
+                    });
+
+                    var tooltip = $('.leaflet-tooltip');
+
+                    switch (zoomLevel) {
+                        case 12:
+                            tooltip.css({'font-size': '12px'});
+                            break;
+                        case 13:
+                            tooltip.css({'font-size': '15px'});
+                            break;
+                        case 14:
+                            tooltip.css({'font-size': '20px'});
+                            break;
+                        case 15:
+                            tooltip.css({'font-size': '25px'});
+                            break;
+                        case 16:
+                            tooltip.css({'font-size': '30px'});
+                            break;
+                        case 17:
+                            tooltip.css({'font-size': '35px'});
+                            break;
+                        default:
+                            tooltip.css({'font-size': '12px'});
+                    }
+                }
+            })
+        }
+    }
+
+</script>
+
+<!--AREA MAP FUNCTION-->
+<script>
+    function areaMap() {
+        widgets.loader.showLoader();
+        // REMOVE OLD CONTROL
+        if (typeof layerGroup !== 'undefined') {
+            layerGroup.clearLayers();
+        }
+        if (typeof layerContoller !== 'undefined') {
+            map.removeControl(layerContoller);
+        }
+        if (typeof poiSearch !== 'undefined') {
+            map.removeControl(poiSearch);
+        }
+
+        //Backend
+        var
+            loadData = {
+                geoJS_shangquan: function () {
+                    var data = JSON.parse("{{geoData_shangquan|escapejs}}");
+                    return L.geoJSON(data).bindPopup(function (layer) {
+                        var content = "<table class='polygon_popup' id='pointTable'>" +
+                            "<tr>" +
+                            "<th>商圈</th>" +
+                            "<th>" + layer.feature.properties['商圈'] + "</th> " +
+                            "</tr>" +
+                            "</table>"
+                        return content;
+                    });
+                },
+                geoJS_shiyedaqu: function () {
+                    var data = JSON.parse("{{geoData_shiyedaqu|escapejs}}");
+                    return L.geoJSON(data).bindPopup(function (layer) {
+                        var content = "<table class='polygon_popup' id='pointTable'>" +
+                            "<tr>" +
+                            "<th>大区</th>" +
+                            "<th>" + layer.feature.properties['大区'] + "</th> " +
+                            "</tr>" +
+                            "</table>"
+                        return content;
+                    });
+                },
+                geoJS_lianjiadaqu: function () {
+                    var data = JSON.parse("{{geoData_lianjiadaqu|escapejs}}");
+                    return L.geoJSON(data).bindPopup(function (layer) {
+                        var content = "<table class='polygon_popup' id='pointTable'>" +
+                            "<tr>" +
+                            "<th>lj大区</th>" +
+                            "<th>" + layer.feature.properties['大区'] + "</th> " +
+                            "</tr>" +
+                            "</table>"
+                        return content;
+                    });
+                },
+            };
+
+        var
+            geoJS_shangquan = loadData.geoJS_shangquan(),
+            geoJS_shiyedaqu = loadData.geoJS_shiyedaqu(),
+            geoJS_lianjiadaqu = loadData.geoJS_lianjiadaqu(),
+            daqu_group = {'商圈': geoJS_shangquan, '大区': geoJS_shiyedaqu, 'lj大区': geoJS_lianjiadaqu};
+
+        //ToolTip + zoom adjusted font-size
+        map.on('zoomend', function () {
+            zoom_fontsize(daqu_group);
+        });
+
+        //add Layer to Map
+        layerGroup.addLayer(geoJS_shangquan);
+        layerGroup.addLayer(geoJS_shiyedaqu);
+        layerGroup.addLayer(geoJS_lianjiadaqu);
+        layerGroup.addTo(map);
+
+        //add addSearchLayer Controls
+        poiSearch = createSearch();
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("商圈", geoJS_shangquan)]);
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("大区", geoJS_shiyedaqu)]);
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("lj大区", geoJS_lianjiadaqu)]);
+
+        //add Layer-Control
+        overlayMaps = {
+            '地名显示': labelMap,
+            "商圈": geoJS_shangquan,
+            "大区": geoJS_shiyedaqu,
+            "lj大区": geoJS_lianjiadaqu,
+        };
+
+        layerContoller = L.control.layers(baseMaps, overlayMaps);
+        map.addControl(layerContoller);
+
+        widgets.loader.removeLoader();
+    };
+</script>
+
+<!--FENLEI FUNCTION-->
+<script>
+    // map.on('click', function (e) {
+    //     $('#mymodal').modal('show');
+    // });
+
+    var add_n = 0;
+
+    function add_fenlei(check, color, left, right) {
+        // var a,div,input,label,t;
+
+        add_n += 1;
+
+        var a = document.createElement("a");
+        a.setAttribute("href", "#");
+        a.setAttribute("class", "list-group-item");
+
+        var div = document.createElement("div");
+        div.setAttribute("class", "form-check form-check-inline");
+        a.appendChild(div);
+
+        var input = document.createElement("input");
+        input.setAttribute("class", "form-check-input");
+        input.setAttribute("type", "checkbox");
+        input.setAttribute("id", `inlineCheckbox${add_n}`);
+        input.setAttribute("value", `option${add_n}`);
+        input.setAttribute("checked", check);
+        div.appendChild(input);
+
+        var label = document.createElement("label");
+        label.setAttribute("class", "form-check-label");
+        label.setAttribute("for", `inlineCheckbox${add_n}`);
+        t = document.createTextNode(`分类 ${add_n}:`);
+        label.appendChild(t);
+        div.appendChild(label);
+
+        var test_wrapper = document.createElement("label");
+        test_wrapper.setAttribute("class", `test_wrapper`);
+        test_wrapper.setAttribute("id", `test_wrapper${add_n}`);
+        test_wrapper.style.backgroundColor = color;
+
+        var input = document.createElement("input");
+        input.setAttribute("class", "inp");
+        input.setAttribute("type", "color");
+        input.setAttribute("reference", `test_wrapper${add_n}`);
+        input.setAttribute("order", `${add_n}`);
+        test_wrapper.appendChild(input);
+        div.appendChild(test_wrapper);
+
+        var label = document.createElement("label");
+        label.setAttribute("class", "form-check-label");
+        label.setAttribute("for", `inlineCheckbox${add_n}`);
+        t = document.createTextNode("数值区间:");
+        label.appendChild(t);
+        div.appendChild(label);
+
+        var input = document.createElement("input");
+        input.setAttribute("type", "number");
+        input.setAttribute("id", "tentacles1");
+        input.setAttribute("class", "tentacles");
+        input.setAttribute("name", "tentacles");
+        input.setAttribute("min", "0");
+        input.setAttribute("max", "999");
+        input.setAttribute("value", left);
+        div.appendChild(input);
+
+        var label = document.createElement("label");
+        label.setAttribute("class", "form-check-label");
+        label.setAttribute("for", `inlineCheckbox${add_n}`);
+        var t = document.createTextNode("-");
+        label.appendChild(t);
+        div.appendChild(label);
+
+        var input = document.createElement("input");
+        input.setAttribute("type", "number");
+        input.setAttribute("id", "tentacles2");
+        input.setAttribute("class", "tentacles");
+        input.setAttribute("name", "tentacles");
+        input.setAttribute("min", "0");
+        input.setAttribute("max", "999");
+        input.setAttribute("value", right);
+        div.appendChild(input);
+
+        var div_element = document.getElementById("item-1-1");
+        /* div1.appendChild(input);
+        div1.appendChild(label_fenlei);
+        div1.appendChild(test_wrapper); */
+        a.appendChild(div);
+        div_element.appendChild(a);
+    }
+
+    $(function () {
+        $('.list-group-item').on('click', function () {
+            $('.glyphicon', this)
+                .toggleClass('glyphicon-chevron-right')
+                .toggleClass('glyphicon-chevron-down');
+        });
+    });
+
+    $(document).on('change', '.inp', function () {
+        var reference = this.getAttribute("reference");
+        var color = this.value;
+        $("#" + reference).css('background-color', "" + color);
+    });
+
+    function get_fenlei() {
+        var ranges = Object.values(document.getElementsByClassName('tentacles')).map(x => x.value);
+        var colors = Object.values(document.getElementsByClassName('test_wrapper')).map(x => x.style.backgroundColor);
+        var check = Object.values(document.getElementsByClassName('form-check-input')).map(x => x.checked);
+        var left_position = ranges.filter(function (el, ind) {
+            return ind % 2 === 0
+        });
+        var right_position = ranges.filter(function (el, ind) {
+            return ind % 2 !== 0
+        });
+
+        return [check, colors, left_position, right_position]
+    }
+</script>
+
+<!--shopMap FUNCTION-->
+<script>
+    var default_params = {
+        left: [0, 5, 10, 15, 20],
+        right: [5, 10, 15, 20, 25],
+        color: ['green', 'yellow', 'orange', 'hotpink', 'red'],
+        check: [true, true, true, true, true],
+        add_default: {check: true, color: "red", left: "", right: ""}
+    };
+
+    for (var i = 0; i < default_params.left.length; i++) {
+        add_fenlei(default_params.check[i], default_params.color[i], default_params.left[i], default_params.right[i]);
+    }
+
+    function mendian_info_function (e, geoJsonPoint) {
+        L.popup().setLatLng(e.latlng)
+            .setContent("<table class='polygon_popup' id='pointTable'>" +
+                "<tr>" +
+                "<th>门店名称</th>" +
+                "<th>" + geoJsonPoint.properties['门店名称'] + "</th> " +
+                "</tr>" +
+                "<tr>" +
+                "<td>大部</td>" +
+                "<td>" + geoJsonPoint.properties['bk_dabu'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>大区</td>" +
+                "<td>" + geoJsonPoint.properties['bk_daqu'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>商圈</td>" +
+                "<td>" + geoJsonPoint.properties['circle'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>归属区域</td>" +
+                "<td>" + geoJsonPoint.properties['guishu_area'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>品牌类别</td>" +
+                "<td>" + geoJsonPoint.properties['brand_type'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>AE/CA</td>" +
+                "<td>" + geoJsonPoint.properties['AECA'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>AE/CA总监</td>" +
+                "<td>" + geoJsonPoint.properties['AECAzongjian'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>经度</td>" +
+                "<td>" + e.latlng['lng'] + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                "<td>纬度</td>" +
+                "<td>" + e.latlng['lat'] + "</td>" +
+                "</tr>" +
+                "</table>")
+            .openOn(map);
+    }
+
+    function mendian_spatial_function(e, geoJsonPoint){
+        var point = turf.point([e.latlng['lng'],e.latlng['lat']]);
+        var buffered = turf.buffer(point, 10, {units: 'kilometers'});
+        L.geoJSON(point).addTo(map);
+        L.geoJSON(buffered).addTo(map);
+    }
+
+    function shopMap(default_params, applied_function) {
+
+        widgets.loader.showLoader();
+        // REMOVE OLD CONTROL
+        if (typeof layerGroup !== 'undefined') {
+            layerGroup.clearLayers();
+        }
+        if (typeof layerContoller !== 'undefined') {
+            map.removeControl(layerContoller);
+        }
+        if (typeof poiSearch !== 'undefined') {
+            map.removeControl(poiSearch);
+        }
+
+        //Load GeoJs Data
+        var loadData = {
+            data: {
+                'shop': JSON.parse("{{geoData_shop|escapejs}}"),
+                'loupan': JSON.parse("{{geoData_loupan|escapejs}}")
+            },
+            geoJS_shangquan: function () {
+                var data = JSON.parse("{{geoData_shangquan|escapejs}}");
+                return L.geoJSON(data, {
+                    style: function (feature) {
+                        for (var i = 0; i < default_params.left.length; i++) {
+                            if (default_params.check[i] == true) {
+                                if (default_params.left[i] <= feature.count_shops && feature.count_shops < default_params.right[i]) {
+                                    return {color: default_params.color[i]};
+                                }
+                            }
+                        }
+                    }
+                }).bindPopup(function (layer) {
+                    var content = "<table class='polygon_popup' id='pointTable'>" +
+                        "<tr>" +
+                        "<th>商圈</th>" +
+                        "<th>" + layer.feature.properties['商圈'] + "</th> " +
+                        "</tr>" +
+                        "<tr>" +
+                        "<td>门店数量</td>" +
+                        "<td>" + layer.feature.count_shops + "</td>" +
+                        "</tr>" +
+                        "</table>"
+                    return content;
+                });
+            },
+            geoJS_shiyedaqu: function () {
+                var data = JSON.parse("{{geoData_shiyedaqu|escapejs}}");
+                return L.geoJSON(data, {
+                    style: function (feature) {
+                        if (feature.count_shops < 5) {
+                            return {color: "green"};
+                        } else if (feature.count_shops > 5) {
+                            return {color: "red"};
+                        }
+                    }
+                }).bindPopup(function (layer) {
+                    var content = "<table class='polygon_popup' id='pointTable'>" +
+                        "<tr>" +
+                        "<th>大区</th>" +
+                        "<th>" + layer.feature.properties['大区'] + "</th> " +
+                        "</tr>" +
+                        "<tr>" +
+                        "<td>门店数量</td>" +
+                        "<td>" + layer.feature.count_shops + "</td>" +
+                        "</tr>" +
+                        "</table>"
+                    return content;
+                });
+            },
+            geoJS_lianjiadaqu: function () {
+                var data = JSON.parse("{{geoData_lianjiadaqu|escapejs}}");
+                return L.geoJSON(data, {
+                    style: function (feature) {
+                        if (feature.count_shops < 5) {
+                            return {color: "green"};
+                        } else if (feature.count_shops > 5) {
+                            return {color: "red"};
+                        }
+                    }
+                });
+            },
+            geoJS_shop: function () {
+                return L.geoJSON(this.data.shop, {
+                    pointToLayer: function (geoJsonPoint, latlng) {
+                        return L.circleMarker(latlng, {
+                            fillColor: 'blue',
+                            weight: 1,
+                            opacity: 1,
+                            color: 'blue',
+                            fillOpacity: 0.6
+                        }).on('click', function (e) {
+                            applied_function(e, geoJsonPoint)
+                        })
+                    },
+                });
+            },
+            heatMap_shop: function () {
+                return loadHeatMap(this.data.shop);
+            },
+            geoJS_loupan: function () {
+                return L.geoJSON(this.data.loupan, {
+                    pointToLayer: function (geoJsonPoint, latlng) {
+                        return L.circleMarker(latlng, {
+                            fillColor: 'red',
+                            weight: 1,
+                            opacity: 1,
+                            color: 'red',
+                            fillOpacity: 0.6
+                        }).on('click', function (e) {
+                            $.ajax({
+                                type: 'GET',
+                                url: "{% url 'get_loupan' %}",
+                                data: {"geoJsonPoint_id": geoJsonPoint.id},
+                                success: function (response) {
+                                    if (response["valid"]) {
+                                        alert("该楼盘暂无信息；");
+                                    } else {
+                                        var loupanData = response["loupanData"];
+                                        var graph_class = {'买卖': '租赁', '租赁': '买卖'},
+                                            sign_date = [],
+                                            sum_gmv = {'买卖': [], '租赁': []},
+                                            dateTime;
+                                        for (var i = 0; i < loupanData.length; i++) {
+                                            dateTime = loupanData[i]['month'];
+                                            sign_date.push(dateTime.split('-')[0] + '年' + dateTime.split('-')[1] + '月');
+                                            sum_gmv[loupanData[i]['biz_type']].push(loupanData[i]['sum_gmv']);
+                                            sum_gmv[graph_class[loupanData[i]['biz_type']]].push(0);
+                                        }
+                                        //echart columns-shape map
+                                        option = {
+                                            legend: {
+                                                data: ["买卖", "租赁"],
+                                                align: 'left'
+                                            },
+                                            toolbox: {
+                                                feature: {
+                                                    magicType: {
+                                                        type: ['stack', 'tiled']
+                                                    },
+                                                    saveAsImage: {
+                                                        pixelRatio: 2
+                                                    }
+                                                }
+                                            },
+                                            tooltip: {},
+                                            xAxis: {
+                                                data: sign_date,
+                                                silent: false,
+                                                splitLine: {
+                                                    show: false
+                                                }
+                                            },
+                                            yAxis: {},
+                                            series: [{
+                                                name: 'bar',
+                                                type: 'bar',
+                                                animationDelay: function (idx) {
+                                                    return idx * 10;
+                                                }
+                                            }, {
+                                                name: 'bar2',
+                                                type: 'bar',
+                                                animationDelay: function (idx) {
+                                                    return idx * 10 + 100;
+                                                }
+                                            }],
+                                            animationEasing: 'elasticOut',
+                                            animationDelayUpdate: function (idx) {
+                                                return idx * 5;
+                                            }
+                                        };
+
+                                        var div = L.DomUtil.create('div');
+                                        var chart = echarts.init(div, '', {
+                                            width: 700,
+                                            height: 300
+                                        });
+                                        chart.setOption(option);
+                                        L.popup({'maxWidth': 750}).setLatLng(e.latlng).setContent(
+                                            function () {
+                                                chart.setOption({
+                                                    title: {
+                                                        text: geoJsonPoint.properties['楼盘名称'],
+                                                        subtext: '楼盘（买卖+租赁）月GMV柱状图',
+                                                    },
+                                                    series: [
+                                                        {
+                                                            name: '买卖',
+                                                            data: sum_gmv['买卖']
+                                                        },
+                                                        {
+                                                            name: '租赁',
+                                                            data: sum_gmv['租赁']
+                                                        }
+                                                    ]
+                                                });
+                                                return chart.getDom();
+                                            }, {maxWidth: 600}
+                                        ).openOn(map);
+                                    }
+                                },
+                                error: function (response) {
+                                    alert(response["responseJSON"]["error"]);
+                                }
+                            });
+                        });
+                    },
+                });
+            },
+            heatMap_loupan: function () {
+                return loadHeatMap(this.data.loupan);
+            },
+        };
+
+        // console.log(loadData.data.loupan);
+        // console.log(loadData.data.loupan.features.map(x => x.properties['楼盘名称']));
+        // console.log(loadData.data.loupan.features.map(x => x.geometry.coordinates[0]));
+        // console.log(loadData.data.loupan.features.map(x => x.geometry.coordinates[1]));
+
+        var dataSet = function () {
+            var data1 = loadData.data.loupan.features.map(x => x.properties['楼盘名称']),
+                data2 = loadData.data.loupan.features.map(x => x.geometry.coordinates[0]),
+                data3 = loadData.data.loupan.features.map(x => x.geometry.coordinates[1]),
+                data_array = [];
+
+            // console.log(data1.length, data2.length, data3.length);
+            // console.log(data1.length === data2.length && data1.length === data3.length && data1 != null);
+            if (data1.length === data2.length && data1.length === data3.length && data1 != null) {
+                for (i = 0; i < data1.length; i++) {
+                    data_array.push([data1[i], data2[i], data3[i]]);
+                }
+            } else {
+                return null;
+            }
+            return data_array;
+        }();
+
+        $(document).ready(function () {
+            $('#example').DataTable({
+                data: dataSet,
+                columns: [
+                    {title: "楼盘名称"},
+                    {title: "经度"},
+                    {title: "纬度"}
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                language: {
+                    url: "{% static 'supermap/plugins/dataTable/chinese.json' %}"
+                }
+            });
+        });
+
+        var
+            geoJS_shangquan = loadData.geoJS_shangquan(),
+            geoJS_shiyedaqu = loadData.geoJS_shiyedaqu(),
+            geoJS_lianjiadaqu = loadData.geoJS_lianjiadaqu(),
+            geoJS_shop = loadData.geoJS_shop(),
+            heatMap_shop = loadData.heatMap_shop(),
+            geoJS_loupan = loadData.geoJS_loupan(),
+            heatMap_loupan = loadData.heatMap_loupan(),
+            daqu_group = {'商圈': geoJS_shangquan, '大区': geoJS_shiyedaqu, 'lj大区': geoJS_lianjiadaqu};
+
+        //add Layer to Map
+        layerGroup.addLayer(geoJS_shangquan);
+        layerGroup.addLayer(geoJS_shiyedaqu);
+        layerGroup.addLayer(geoJS_lianjiadaqu);
+        layerGroup.addLayer(geoJS_shop);
+        layerGroup.addLayer(heatMap_shop);
+        layerGroup.addLayer(geoJS_loupan);
+        layerGroup.addLayer(heatMap_loupan);
+        layerGroup.addTo(map);
+
+        //add addSearchLayer Controls
+        poiSearch = createSearch();
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("商圈", geoJS_shangquan)]);
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("大区", geoJS_shiyedaqu)]);
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("lj大区", geoJS_lianjiadaqu)]);
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("门店", geoJS_shop)]);
+        poiSearch.addSearchLayer([L.supermap.components.geoJSONLayerWithName("楼盘", geoJS_loupan)]);
+
+        //add Layer-Control
+        overlayMaps = {
+            '地名显示': labelMap,
+            "商圈": geoJS_shangquan,
+            "大区": geoJS_shiyedaqu,
+            "lj大区": geoJS_lianjiadaqu,
+            '门店': geoJS_shop,
+            '楼盘': geoJS_loupan,
+            '门店热力图': heatMap_shop,
+            '楼盘热力图': heatMap_loupan,
+        };
+
+        layerContoller = L.control.layers(baseMaps, overlayMaps);
+        map.addControl(layerContoller);
+
+        // If Update Point in Polygons
+        if (update_pointinpolygon['shop'] == true) {
+            var polygon = {'lianjiadaqu': geoJS_lianjiadaqu, 'shiyedaqu': geoJS_shiyedaqu};
+            updatePoint_daqu(data, polygon['shiyedaqu']);
+        }
+
+        // 地图放大改变tooltip字体大小
+        map.on('zoomend', function () {
+            zoom_fontsize(daqu_group);
+        });
+
+        widgets.loader.removeLoader();
+    };
+</script>
+
