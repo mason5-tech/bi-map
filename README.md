@@ -1,6 +1,6 @@
 # BI-Map
  
-###### Due to regulation of the company, I've removed all relative data and login info from the map. The purpose of this post is displaying data visualization and functions on the map. Only map visulization in pictures and sample codes are presented.
+###### Due to regulation of the company, I've removed all relative data and login info from the map. The purpose of this post is displaying data visualization and functions on the map. Only sample charts and sample codes are presented. Developed based on Django, Leaflet, Echats.js, node.js, etc...
 
 ###### 1.View Selections: be able to load different data by selecting views on side-bar
 
