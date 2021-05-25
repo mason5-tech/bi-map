@@ -4,4 +4,5 @@
 
 #### 1.View Selections: be able to load different data for view by selecting on side-bar
 
+![viewSelection](https://user-images.githubusercontent.com/62177336/119468219-d0b24000-bd78-11eb-840e-3e62edcdab33.png)
 
