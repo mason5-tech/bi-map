@@ -34,6 +34,6 @@
 
 ![spatialAnalysis](https://user-images.githubusercontent.com/62177336/119470955-677ffc00-bd7b-11eb-826a-ba58ed2e38e1.png)
 
-###### 9. Data Table: preview or download your data from table！
+###### 9. Data Table: preview or download map data
 
 ![dataTable](https://user-images.githubusercontent.com/62177336/119779070-d46dd000-befa-11eb-962f-bc17ce3353eb.png)
